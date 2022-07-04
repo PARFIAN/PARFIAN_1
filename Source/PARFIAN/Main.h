@@ -36,6 +36,9 @@ public:
 	// Sets default values for this character's properties
 	AMain();
 
+	UPROPERTY(EditDefaultsOnly, Category = "SaveData")
+	TSubclassOf<class AItemStorage> WeaponStorage;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	bool bHasCombatTarget;
 
@@ -217,4 +220,10 @@ public:
 	TSubclassOf<AEnemy> EnemyFilter;
 
 	void SwitchLevel(FName LevelName);
+
+	UFUNCTION(BlueprintCallable)
+	void Savegame();
+
+	UFUNCTION(BlueprintCallable)
+	void LoadGame(bool SetPosition);
 };
