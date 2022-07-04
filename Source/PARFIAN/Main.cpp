@@ -72,6 +72,8 @@ AMain::AMain()
 	bShiftKeyDown = false;
 	bLMBDown = false;
 
+	bESCDown = false;
+
 	// Initialize Enums
 	MovementStatus = EMovementStatus::EMS_Normal;
 	StaminaStatus = EStaminaStatus::ESS_Normal;
@@ -181,6 +183,8 @@ float AMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 
 void AMain::Die()
 {
+	if (MovementStatus == EMovementStatus::EMS_Dead) return;
+
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance && CombatMontage)
 	{
@@ -193,6 +197,8 @@ void AMain::Die()
 
 void AMain::Jump()
 {
+	if (MainPlayerController && MainPlayerController->bPauseMenuVisible) return;
+
 	if (MovementStatus != EMovementStatus::EMS_Dead && !bAttacking)
 	{
 		Super::Jump();
@@ -373,24 +379,49 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AMain::ShiftKeyDown);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AMain::ShiftKeyUp);
 
+	PlayerInputComponent->BindAction("ESC", IE_Pressed, this, &AMain::ESCDown);
+	PlayerInputComponent->BindAction("ESC", IE_Released, this, &AMain::ESCUp);
+
 	PlayerInputComponent->BindAction("LMB", IE_Pressed, this, &AMain::LMBDown);
 	PlayerInputComponent->BindAction("LMB", IE_Released, this, &AMain::LMBUp);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &AMain::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AMain::MoveRight);
 
-	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
-	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
+	PlayerInputComponent->BindAxis("Turn", this, &AMain::Turn);
+	PlayerInputComponent->BindAxis("LookUp", this, &AMain::LookUp);
 	PlayerInputComponent->BindAxis("TurnRate", this, &AMain::TurnAtRate);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AMain::LookUpAtRate);
+}
+
+bool AMain::CanMove(float Value)
+{
+		return Controller != nullptr &&	Value != 0.0f && !bAttacking &&
+			MovementStatus != EMovementStatus::EMS_Dead && 
+			!MainPlayerController->bPauseMenuVisible;
+}
+
+void AMain::Turn(float Value)
+{
+	if (CanMove(Value))
+	{
+		AddControllerYawInput(Value);
+	}
+}
+
+void AMain::LookUp(float Value)
+{
+	if (CanMove(Value))
+	{
+		AddControllerPitchInput(Value);
+	}
 }
 
 void AMain::MoveForward(float Value)
 {
 	bMovingForward = false;
 
-	if (Controller != nullptr && Value != 0.f && !bAttacking && 
-		MovementStatus != EMovementStatus::EMS_Dead)
+	if (CanMove(Value))
 	{
 		// find out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
@@ -407,8 +438,7 @@ void AMain::MoveRight(float Value)
 {
 	bMovingRight = false;
 
-	if (Controller != nullptr && Value != 0.0f && !bAttacking &&
-		MovementStatus != EMovementStatus::EMS_Dead)
+	if (CanMove(Value))
 	{
 		// font ou which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
@@ -437,6 +467,8 @@ void AMain::LMBDown()
 
 	if (MovementStatus == EMovementStatus::EMS_Dead) return;
 
+	if (MainPlayerController && MainPlayerController->bPauseMenuVisible) return;
+
 	if (ActiveOverlappingItem)
 	{
 		AWeapon* Weapon = Cast<AWeapon>(ActiveOverlappingItem);
@@ -455,6 +487,22 @@ void AMain::LMBDown()
 void AMain::LMBUp()
 {
 	bLMBDown = false;
+}
+
+
+void AMain::ESCDown()
+{
+	bESCDown = true;
+
+	if (MainPlayerController)
+	{
+		MainPlayerController->TogglePauseMenu();
+	}
+}
+
+void AMain::ESCUp()
+{
+	bESCDown = false;
 }
 
 void AMain::SetEquippedWeapon(AWeapon* WeaponToSet)
@@ -640,4 +688,8 @@ void AMain::LoadGame(bool SetPosition)
 		SetActorLocation(LoadGameInstance->CharacterStats.Location);
 		SetActorRotation(LoadGameInstance->CharacterStats.Rotation);
 	}
+
+	SetMovementStatus(EMovementStatus::EMS_Normal);
+	GetMesh()->bPauseAnims = false;
+	GetMesh()->bNoSkeletonUpdate = false;
 }
