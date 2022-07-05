@@ -38,6 +38,9 @@ struct FCharacterStats
 
 	UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
 	FString WeaponName;
+
+	UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
+	FString LevelName;
 };
 
 UCLASS()
@@ -56,5 +59,5 @@ public:
 	uint32 UserIndex;
 	
 	UPROPERTY(VisibleAnywhere, Category = "Basic")
-		FCharacterStats CharacterStats;
+	FCharacterStats CharacterStats;
 };

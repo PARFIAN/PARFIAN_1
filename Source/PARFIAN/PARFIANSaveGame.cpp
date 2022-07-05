@@ -11,5 +11,6 @@ UPARFIANSaveGame::UPARFIANSaveGame()
 
 	UserIndex = 0;
 
-	CharacterStats.WeaponName = TEXT("");
+	CharacterStats.WeaponName = "";
+	CharacterStats.LevelName = "";
 }
