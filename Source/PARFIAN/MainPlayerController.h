@@ -51,9 +51,9 @@ public:
 	void DisplayEnemyHealthBar();
 	void RemoveEnemyHealthBar();
 
-
-
 	FVector EnemyLocation;
+
+	void GameModeOnly();
 
 protected:
 
